@@ -5,15 +5,45 @@
 //  Created by Thomas Carton.
 //
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
+// readline: read a line of size x data in file, return the size read
+static unsigned int readline(FILE *file, unsigned char **line, unsigned int size)
+{
+    if (!file || !line || size < 1 || (!*line && !(*line = (unsigned char *)malloc(size))))
+        return 0;
+
+    unsigned int i;
+    for (i = 0; i < size; ++i)
+    {
+        int c = fgetc(file);
+
+        if (ferror(file))
+            return 0;
+        if (c == EOF)
+            break;
+
+        *(*line + i) = c;
+    }
+
+    return i;
+}
 
 int main(int argc, const char *argv[])
 {
     int ret = 0;
 
+    char infile[PATH_MAX];
     char outfile[FILENAME_MAX] = "data.c";
+    unsigned int size = 16;
+
+    if (argc < 2)
+    {
+        goto usage;
+    }
 
     // read parameters
     for (unsigned int i = 0; i < argc; ++i)
@@ -35,22 +65,56 @@ int main(int argc, const char *argv[])
         {
             goto usage;
         }
+        // input
+        else
+        {
+            strcpy(infile, argv[i]);
+        }
     }
 
     char *name = "test";
 
-    // output
+    // files
+    FILE *in = NULL;
     FILE *out = NULL;
 
+    // input
+    if (!(in = fopen(infile, "r")))
+    {
+        fprintf(stderr, "failed to open `%s' for reading\n", infile);
+        goto error;
+    }
+
+    // output
     if (!(out = fopen(outfile, "w")))
     {
         fprintf(stderr, "failed to open `%s' for output\n", outfile);
-        return 1;
+        goto error;
     }
+
 
     fprintf(out, "// Generated file\n// %s\n\n", name);
     fprintf(out, "#ifndef %s_h_\n", name);
     fprintf(out, "#define %s_h_\n\n", name);
+
+    fprintf(out, "unsigned char %s[] = \n{\n", name);
+
+    unsigned int len = 0;
+    unsigned char *line = NULL;
+    while ((len = readline(in, &line, size)))
+    {
+        fprintf(out, "    ");
+        for (unsigned int i = 0; i < len; ++i)
+        {
+            fprintf(out, "0x%02X, ", line[i]);
+        }
+        fprintf(out, "\n");
+
+        free(line);
+        line = NULL;
+    }
+
+    fclose(in);
 
     fprintf(out, "#endif // %s_h_\n\n", name);
 
@@ -58,7 +122,7 @@ int main(int argc, const char *argv[])
 
     if (ret == 0)
     {
-        printf("generated `%s'\n", outfile);
+        printf("generated '%s'\n", outfile);
     }
     else
     {
@@ -79,6 +143,12 @@ usage:
     fprintf(stderr, "     %s icon.png -o icon.c\n", argv[0]);
 
     fprintf(stderr, "\n");
+
+    return 0;
+
+error:
+    if (in) fclose(in);
+    if (out) fclose(out);
 
     return 1;
 }
