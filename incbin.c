@@ -11,8 +11,8 @@
 #include <limits.h>
 
 
-// lastPathComponent: return the last component of a given path
-static char *lastPathComponent(const char *path)
+// lastPathComponentName: return the last component of a given path
+static char *lastPathComponentName(const char *path)
 {
     char *lname = strrchr(path, '/');
     lname = lname == NULL ? (char *)path : lname + 1;
@@ -103,7 +103,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    char *name = lastPathComponent(infile);
+    char *name = lastPathComponentName(infile);
 
     // files
     FILE *in = NULL;
@@ -145,12 +145,13 @@ int main(int argc, const char *argv[])
         line = NULL;
     }
 
-    fclose(in);
 
     fprintf(out, "};\n\n");
     fprintf(out, "#endif // %s_h_\n\n", name);
 
+    free(name);
     fclose(out);
+    fclose(in);
 
     if (ret == 0)
     {
@@ -165,14 +166,16 @@ int main(int argc, const char *argv[])
 
 usage:
     fprintf(stderr, "\n");
-    fprintf(stderr, " %s path [-h/--help] | [-o/--output output]\n\n", argv[0]);
 
     fprintf(stderr, "   usage:\n");
+    fprintf(stderr, "     %s path [-h/--help] | [-o/--output output] | [-s/--size size]\n\n", lastPathComponentName(argv[0]));
+    fprintf(stderr, "   parameters:\n");
     fprintf(stderr, "     -h, --help     - display this\n");
-    fprintf(stderr, "     -o, --output   - output file [default is \"data.c\"]\n");
+    fprintf(stderr, "     -o, --output   - output file [default: \"data.c\"]\n");
+    fprintf(stderr, "     -s, --size     - number of columns per line [default: 16]\n");
 
     fprintf(stderr, "   example:\n");
-    fprintf(stderr, "     %s icon.png -o icon.c\n", argv[0]);
+    fprintf(stderr, "     %s icon.png -o icon.c -s 8\n", argv[0]);
 
     fprintf(stderr, "\n");
 
@@ -182,6 +185,7 @@ error:
     if (in) fclose(in);
     if (out) fclose(out);
 
+    free(name);
     return 1;
 }
 
