@@ -10,6 +10,25 @@
 #include <string.h>
 #include <limits.h>
 
+
+// lastPathComponent: return the last component of a given path
+static char *lastPathComponent(const char *path)
+{
+    char *lname = strrchr(path, '/');
+    lname = lname == NULL ? (char *)path : lname + 1;
+
+    char *name = malloc(strlen(lname) + 1);
+    strcpy(name, lname);
+
+    char *rname = strrchr(name, '.');
+    if (rname)
+    {
+        *rname = '\0';
+    }
+
+    return name;
+}
+
 // readline: read a line of size x data in file, return the size read
 static unsigned int readline(FILE *file, unsigned char **line, unsigned int size)
 {
@@ -48,8 +67,20 @@ int main(int argc, const char *argv[])
     // read parameters
     for (unsigned int i = 0; i < argc; ++i)
     {
+        // size
+        if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--size") == 0)
+        {
+            if (argc > i + 1)
+            {
+                sscanf(argv[i + 1], "%d", &size);
+
+                memmove(argv + i + 1, argv + i + 2, (argc - i - 2) * sizeof *argv);
+                --argc;
+                continue;
+            }
+        }
         // output
-        if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0)
+        else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0)
         {
             if (argc > i + 1)
             {
@@ -72,7 +103,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    char *name = "test";
+    char *name = lastPathComponent(infile);
 
     // files
     FILE *in = NULL;
@@ -116,6 +147,7 @@ int main(int argc, const char *argv[])
 
     fclose(in);
 
+    fprintf(out, "};\n\n");
     fprintf(out, "#endif // %s_h_\n\n", name);
 
     fclose(out);
