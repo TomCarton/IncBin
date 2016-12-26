@@ -123,12 +123,17 @@ int main(int argc, const char *argv[])
         goto error;
     }
 
+	// get input file total size
+	fseek(in, 0L, SEEK_END);
+	long int inputFileSize = ftell(in);
+	fseek(in, 0L, SEEK_SET);
+
 
     fprintf(out, "// Generated file\n// %s\n\n", name);
     fprintf(out, "#ifndef %s_h_\n", name);
     fprintf(out, "#define %s_h_\n\n", name);
 
-    fprintf(out, "unsigned char %s[] = \n{\n", name);
+    fprintf(out, "unsigned char %s[%ld] = \n{\n", name, inputFileSize);
 
     unsigned int len = 0;
     unsigned char *line = NULL;
